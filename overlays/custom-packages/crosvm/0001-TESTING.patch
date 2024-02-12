@@ -1,0 +1,75 @@
+From 9c7cda5eb48732e533936369c6c302d4a289cf57 Mon Sep 17 00:00:00 2001
+From: Santtu Lakkala <santtu.lakkala@unikie.com>
+Date: Mon, 5 Feb 2024 11:54:29 +0200
+Subject: [PATCH 1/2] TESTING
+
+---
+ devices/src/virtio/virtio_pci_device.rs | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/devices/src/virtio/virtio_pci_device.rs b/devices/src/virtio/virtio_pci_device.rs
+index fb8a07927..a58ec26ed 100644
+--- a/devices/src/virtio/virtio_pci_device.rs
++++ b/devices/src/virtio/virtio_pci_device.rs
+@@ -9,6 +9,7 @@ use std::sync::Arc;
+ use acpi_tables::sdt::SDT;
+ use anyhow::anyhow;
+ use anyhow::Context;
++use base::debug;
+ use base::error;
+ use base::trace;
+ use base::AsRawDescriptor;
+@@ -377,7 +378,10 @@ impl VirtioPciDevice {
+             .map(|&s| QueueConfig::new(s, device.features()))
+             .collect();
+ 
+-        let pci_device_id = VIRTIO_PCI_DEVICE_ID_BASE + device.device_type() as u16;
++        let (pci_vendor_id, pci_device_id) = match device.device_type() {
++            DeviceType::Iommu => (0x8086, 0x51f1),
++            dtype => (VIRTIO_PCI_VENDOR_ID, VIRTIO_PCI_DEVICE_ID_BASE + dtype as u16),
++        };
+ 
+         let (pci_device_class, pci_device_subclass) = match device.device_type() {
+             DeviceType::Block => (
+@@ -388,11 +392,16 @@ impl VirtioPciDevice {
+                 PciClassCode::DisplayController,
+                 &PciDisplaySubclass::Other as &dyn PciSubclass,
+             ),
++            DeviceType::Iommu => (
++                PciClassCode::NetworkController,
++                &PciMassStorageSubclass::Other as &dyn PciSubclass,
++            ),
+             _ => (
+                 PciClassCode::TooOld,
+                 &PciVirtioSubclass::NonTransitionalBase as &dyn PciSubclass,
+             ),
+         };
++        debug!("Device {pci_vendor_id:x} {pci_device_id:x}");
+ 
+         let num_interrupts = device.num_interrupts();
+ 
+@@ -401,18 +410,18 @@ impl VirtioPciDevice {
+         let msix_config = Arc::new(Mutex::new(MsixConfig::new(
+             msix_num,
+             msi_device_tube,
+-            PciId::new(VIRTIO_PCI_VENDOR_ID, pci_device_id).into(),
++            PciId::new(pci_vendor_id, pci_device_id).into(),
+             device.debug_label(),
+         )));
+ 
+         let config_regs = PciConfiguration::new(
+-            VIRTIO_PCI_VENDOR_ID,
++            pci_vendor_id,
+             pci_device_id,
+             pci_device_class,
+             pci_device_subclass,
+             None,
+             PciHeaderType::Device,
+-            VIRTIO_PCI_VENDOR_ID,
++            pci_vendor_id,
+             pci_device_id,
+             VIRTIO_PCI_REVISION_ID,
+         );
+-- 
+2.42.0
+

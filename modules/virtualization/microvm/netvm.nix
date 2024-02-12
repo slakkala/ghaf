@@ -28,7 +28,7 @@
         nixpkgs.buildPlatform.system = configHost.nixpkgs.buildPlatform.system;
         nixpkgs.hostPlatform.system = configHost.nixpkgs.hostPlatform.system;
 
-        microvm.hypervisor = "qemu";
+        microvm.hypervisor = "crosvm";
 
         networking = {
           firewall.allowedTCPPorts = [53];
