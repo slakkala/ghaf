@@ -11,6 +11,7 @@
   weston = import ./weston {inherit final prev;};
   wifi-connector = final.callPackage ../../packages/wifi-connector {};
   wifi-connector-nmcli = final.callPackage ../../packages/wifi-connector {useNmcli = true;};
+  cloud-hypervisor = import ./cloud-hypervisor prev;
   qemu_kvm = import ./qemu {inherit final prev;};
   nm-launcher = final.callPackage ../../packages/nm-launcher {};
   labwc = import ./labwc {inherit prev;};
