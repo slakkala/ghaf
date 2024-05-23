@@ -90,6 +90,7 @@
 
         microvm = {
           optimize.enable = true;
+          balloonMem = 128;
           hypervisor = "qemu";
           shares =
             [
