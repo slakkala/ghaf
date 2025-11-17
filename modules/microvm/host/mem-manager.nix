@@ -15,7 +15,23 @@ let
   ) (builtins.attrNames (config.microvm.vms or { }));
 in
 {
-  systemd.services =
+  services.dbus.packages = [ pkgs.ghaf-mem-manager ];
+  systemd.services = {
+    "ghaf-mem-managerd" = {
+      description = "Manage MicroVM memory levels";
+      after = [ "dbus.service" ];
+      requires = [ "dbus.service" ];
+      serviceConfig = {
+        Type = "dbus";
+        BusName = "ae.tii.MemManager";
+        Environment = [
+          "RUST_LOG=debug"
+        ];
+        ExecStart = "${pkgs.ghaf-mem-manager}/bin/ghaf-mem-managerd -l 70 -H 85";
+      };
+    };
+  }
+  //
     builtins.foldl'
       (
         result: name:
@@ -28,14 +44,19 @@ in
           {
             "ghaf-mem-manager-${name}" = {
               description = "Manage MicroVM '${name}' memory levels";
-              after = [ "microvm@${name}.service" ];
-              requires = [ "microvm@${name}.service" ];
+              after = [
+                "microvm@${name}.service"
+                "ghaf-mem-managerd.service"
+              ];
+              requires = [
+                "microvm@${name}.service"
+                "ghaf-mem-managerd.service"
+              ];
               serviceConfig = {
-                Type = "simple";
-                WorkingDirectory = "${config.microvm.stateDir}/${name}";
-                ExecStart = "${pkgs.ghaf-mem-manager}/bin/ghaf-mem-manager -s ${name}.sock -m ${
+                Type = "oneshot";
+                ExecStart = "${pkgs.dbus}/bin/dbus-send --system --type=method_call --print-reply --dest=ae.tii.MemManager / ae.tii.MemManager.AttachVm string:${config.microvm.stateDir}/${name}/${name}.sock uint64:${
                   toString (appvmConfig.ramMb * 1024 * 1024)
-                } -M ${toString (microvmConfig.mem * 1024 * 1024)}";
+                } uint64:${toString (microvmConfig.mem * 1024 * 1024)}";
               };
             };
           }

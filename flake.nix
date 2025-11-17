@@ -82,7 +82,8 @@
 
     # A set of useful nix packages and utilities for ghaf
     ghafpkgs = {
-      url = "github:tiiuae/ghafpkgs";
+      #url = "github:tiiuae/ghafpkgs";
+      url = "github:slakkala/ghafpkgs/mem-managerd";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
